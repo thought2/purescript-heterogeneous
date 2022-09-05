@@ -7,6 +7,7 @@ import Data.Functor.App (App(..))
 import Data.Functor.Variant (VariantF)
 import Data.Functor.Variant as VariantF
 import Data.FunctorWithIndex (class FunctorWithIndex, mapWithIndex)
+import Data.Generic.Rep as R
 import Data.Symbol (class IsSymbol)
 import Data.Tuple (Tuple(..))
 import Data.Variant (Variant)
@@ -198,3 +199,36 @@ instance mapVariantFWithIndexCons ::
 
 instance mapVariantFWithIndexNil :: MapVariantFWithIndex RL.Nil fn () r x y where
   mapVariantFWithIndex _ _ = VariantF.case_
+
+
+instance hmapNoConstructors :: HMap c R.NoConstructors R.NoConstructors where
+  hmap _ = identity
+
+instance HMap c R.NoArguments R.NoArguments
+  where
+  hmap _ = identity
+
+instance
+  ( HMap c a a'
+  , HMap c b b'
+  ) =>
+  HMap c (R.Product a b) (R.Product a' b')
+  where
+  hmap c (R.Product x y) = R.Product (hmap c x) (hmap c y)
+
+instance
+  ( HMap c a a'
+  , HMap c b b'
+  ) =>
+  HMap c (R.Sum a b) (R.Sum a' b')
+  where
+  hmap opts  (R.Inl x) = R.Inl (hmap opts x)
+  hmap opts (R.Inr x) = R.Inr (hmap opts x)
+
+instance Mapping c a b => HMap c  (R.Argument a) (R.Argument b)
+  where
+  hmap c (R.Argument x) = R.Argument (mapping c x)
+
+instance HMap c a a' => HMap c (R.Constructor s a) (R.Constructor s a')
+  where
+  hmap opts (R.Constructor x) = R.Constructor (hmap opts x)
